@@ -8,7 +8,8 @@ import {
   MessageActionRow,
   MessageAttachment,
   MessageButton,
-  MessageEmbed
+  MessageEmbed,
+  MessageEmbedFooter
 } from "discord.js";
 import { MessageButtonStyles } from "discord.js/typings/enums";
 import { editReply, update } from "../utils/safeChanges";
@@ -111,17 +112,23 @@ export class PagedEmbed {
   Sends a the paged embed with the given embed list and attachments.
   */
   async send(interaction: CommandInteraction, embeds: MessageEmbed[], attachments: MessageAttachment[] | string[] = []) {
-    let hydrateEmbed = (data: MessageEmbed, index: number): MessageEmbed => {
-      if (this.showPaging) {
-        data?.setFooter({ text: "Page " + (index + 1) + " / " + embeds.length });
+
+    // Hydrate embeds with page numbers if enabled
+    if (this.showPaging) {
+      for (let i = 0; i < embeds.length; i++) {
+        let embed = embeds[i];
+        let newFooter: MessageEmbedFooter = {
+          text: "\u200b\nPage " + (i + 1) + " / " + embeds.length + embed.footer?.text,
+          iconURL: embed.footer?.iconURL,
+          proxyIconURL: embed.footer?.proxyIconURL
+        }
+        embed?.setFooter(newFooter);
       }
-    
-      return data;
-    };
+    }
 
     if (embeds.length === 1) {
       await interaction.reply({
-        embeds: [hydrateEmbed(embeds[0], 0)],
+        embeds: [embeds[0]],
         files: attachments
       });
       return;
@@ -140,7 +147,7 @@ export class PagedEmbed {
     });
 
     let embed = await interaction.reply({
-      embeds: [hydrateEmbed(embeds[0], 0)],
+      embeds: [embeds[0]],
       files: attachments,
       components: embeds.length > 1 ? [new MessageActionRow({components: [forwardButton]})] : [],
       fetchReply: true
@@ -162,7 +169,7 @@ export class PagedEmbed {
         }
 
         await update(buttonInteraction, {
-          embeds: [hydrateEmbed(embeds[currentIndex], currentIndex)],
+          embeds: [embeds[currentIndex]],
           components: [
             new MessageActionRow({
               components: [

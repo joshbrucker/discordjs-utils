@@ -1,6 +1,6 @@
 {
   "name": "@joshbrucker/discordjs-utils",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A set of utility classes/functions to aid with discord.js bot development.",
   "main": "lib/index.js",
   "scripts": {
