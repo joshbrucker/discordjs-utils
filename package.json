@@ -1,7 +1,7 @@
 {
   "name": "@joshbrucker/discordjs-utils",
-  "version": "0.1.1",
-  "description": "A set of utility classes/functions to aid with discord.js bot development.",
+  "version": "0.1.2",
+  "description": "A set of utility classes and functions to aid with discord.js bot development. Paged embeds, emoji utilities, and more!",
   "main": "lib/index.js",
   "scripts": {
     "build": "npx tsc -d"
@@ -16,6 +16,9 @@
     "discord.js-utils",
     "discordjs-utils",
     "discord",
+    "pages",
+    "emojis",
+    "shards",
     "utils"
   ],
   "author": "Joshua Brucker",
