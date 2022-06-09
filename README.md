@@ -113,27 +113,18 @@ channel.send(`My emoji works: ${formatted}`);
 
 ---
 
-## Safe Changes
-When you try to use the `editReply` or `update` functions on interactions that have been deleted, an error gets thrown. Handling this error in every case would be cumbersome, and creating a global error handler is not necessarily a great practice because you could end up eating errors you don't intend to. The functions below will try to make an edit/update, and if they fail due to a deleted message/interaction, the error is ignored.
+## Error Handlers
+This section contains functions that will help with handling errors.
 
-### editReply(CommandInteraction, MessagePayload)
-The equivalent to interaction.editReply(). The function takes in a command interaction and then the message that you want to update the interaction with.
+### ignore(number[])
+The ignore error handler takes in a list of numbers that represent Discord APIErrors (you can find a mapping of them at `Constants.APIErrors`), and it will return a function that accepts an error. If this error matches one in the provided list parameter, then the error is ignored. Otherwise, it is thrown.
 
 ```javascript
-const { safeChanges } = require("@joshbrucker/discordjs-utils.js");
+const { ignore } = require("@joshbrucker/discordjs-utils.js");
+const { Constants: { APIErrors: { UNKNOWN_MESSAGE } } } = require('discord.js');
 
 // ...
 
-await safeChanges.editReply(commandInteraction, "my new message");
-```
-
-### update(ComponentInteraction, MessagePayload)
-The equivalent to interaction.update(). The function takes in a component interaction and then the message that you want to update the interaction with.
-
-```javascript
-const { safeChanges } = require("@joshbrucker/discordjs-utils.js");
-
-// ...
-
-await safeChanges.update(componentInteraction, "my new message");
+// If our interaction was deleted before it's edited, we just want to ignore the resulting error.
+await interaction.editReply("editing my interaction message").catch(ignore([UNKNOWN_MESSAGE]));
 ```
