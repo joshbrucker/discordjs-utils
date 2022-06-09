@@ -9,10 +9,11 @@ import {
   MessageAttachment,
   MessageButton,
   MessageEmbed,
-  MessageEmbedFooter
+  MessageEmbedFooter,
+  Constants
 } from "discord.js";
 import { MessageButtonStyles } from "discord.js/typings/enums";
-import { editReply, update } from "../utils/safeChanges";
+import { ignore } from "../utils/errorHandlers.js";
 
 const backId = "back";
 const forwardId = "forward";
@@ -168,7 +169,7 @@ export class PagedEmbed {
           currentIndex += 1;
         }
 
-        await update(buttonInteraction, {
+        await buttonInteraction.update({
           embeds: [embeds[currentIndex]],
           components: [
             new MessageActionRow({
@@ -178,14 +179,14 @@ export class PagedEmbed {
               ]
             })
           ]
-        })
+        }).catch(ignore([Constants.APIErrors.UNKNOWN_INTERACTION]));
       });
 
       this.collector.on("end", async () => {
         backButton.disabled = true;
         forwardButton.disabled = true;
 
-        await editReply(interaction, {
+        await interaction.editReply({
           components: [
             new MessageActionRow({
               components: [
@@ -194,7 +195,7 @@ export class PagedEmbed {
               ]
             })
           ]
-        });
+        }).catch(ignore([Constants.APIErrors.UNKNOWN_MESSAGE]));
       });
     }
   }
