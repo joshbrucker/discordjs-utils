@@ -119,7 +119,7 @@ export class PagedEmbed {
       for (let i = 0; i < embeds.length; i++) {
         let embed = embeds[i];
         let newFooter: MessageEmbedFooter = {
-          text: "\u200b\nPage " + (i + 1) + " / " + embeds.length + embed.footer?.text,
+          text: "\u200b\nPage " + (i + 1) + " / " + embeds.length + (embed.footer ? embed.footer.text : ""),
           iconURL: embed.footer?.iconURL,
           proxyIconURL: embed.footer?.proxyIconURL
         }

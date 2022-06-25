@@ -1,6 +1,6 @@
 {
   "name": "@joshbrucker/discordjs-utils",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A set of utility classes and functions to aid with discord.js bot development. Paged embeds, emoji utilities, and more!",
   "main": "lib/index.js",
   "scripts": {
