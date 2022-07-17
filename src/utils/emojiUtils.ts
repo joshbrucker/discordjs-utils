@@ -17,7 +17,7 @@ export async function fetch(client: Client, identifier: string): Promise<Emoji |
   
   if (client.shard) {
     let emojiArray: any[] = await client.shard.broadcastEval(findEmoji, { context: { identifier: identifier }});
-    emojiArray.filter(emoji => emoji != null);
+    emojiArray = emojiArray.filter(emoji => emoji != null);
     return emojiArray.shift();
   } else {
     return findEmoji(client, { identifier: identifier });
