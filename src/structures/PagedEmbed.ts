@@ -1,18 +1,15 @@
 import {
   ButtonInteraction,
   CommandInteraction,
-  EmojiResolvable,
-  ExcludeEnum,
   InteractionCollector,
   Message,
-  MessageActionRow,
-  MessageAttachment,
-  MessageButton,
-  MessageEmbed,
-  MessageEmbedFooter,
-  Constants
+  ActionRowBuilder,
+  Attachment,
+  ButtonBuilder,
+  ComponentEmojiResolvable,
+  EmbedBuilder
 } from "discord.js";
-import { MessageButtonStyles } from "discord.js/typings/enums";
+import { ButtonStyle, RESTJSONErrorCodes } from "discord-api-types/v10";
 import { ignore } from "../utils/errorHandlers.js";
 
 const backId = "back";
@@ -20,20 +17,22 @@ const forwardId = "forward";
 
 export interface PagedEmbedOptions {
   timeout: number,
-  leftEmoji: EmojiResolvable,
-  rightEmoji: EmojiResolvable,
-  leftStyle: ExcludeEnum<typeof MessageButtonStyles, "LINK">,
-  rightStyle: ExcludeEnum<typeof MessageButtonStyles, "LINK">,
-  showPaging: boolean
+  leftEmoji: ComponentEmojiResolvable,
+  rightEmoji: ComponentEmojiResolvable,
+  leftStyle: Exclude<ButtonStyle, ButtonStyle.Link>,
+  rightStyle: Exclude<ButtonStyle, ButtonStyle.Link>,
+  showPaging: boolean,
+  wrapAround: boolean
 }
 
 const DefaultOptions: PagedEmbedOptions = {
   timeout: 120000,
   leftEmoji: "⬅️",
   rightEmoji: "➡️",
-  leftStyle: "SECONDARY",
-  rightStyle: "SECONDARY",
-  showPaging: true
+  leftStyle: ButtonStyle.Secondary,
+  rightStyle: ButtonStyle.Secondary,
+  showPaging: true,
+  wrapAround: false
 }
 
 /*
@@ -42,11 +41,12 @@ where Discord users can click buttons to page through a list of embeds.
 */
 export class PagedEmbed {
   timeout: number;
-  leftEmoji: EmojiResolvable;
-  rightEmoji: EmojiResolvable;
-  leftStyle: ExcludeEnum<typeof MessageButtonStyles, "LINK">;
-  rightStyle: ExcludeEnum<typeof MessageButtonStyles, "LINK">;
+  leftEmoji: ComponentEmojiResolvable;
+  rightEmoji: ComponentEmojiResolvable;
+  leftStyle: Exclude<ButtonStyle, ButtonStyle.Link>;
+  rightStyle: Exclude<ButtonStyle, ButtonStyle.Link>;
   showPaging: boolean;
+  wrapAround: boolean;
 
   collector: InteractionCollector<any> | undefined;
 
@@ -63,6 +63,7 @@ export class PagedEmbed {
     this.leftStyle = options.leftStyle;
     this.rightStyle = options.rightStyle;
     this.showPaging = options.showPaging;
+    this.wrapAround = options.wrapAround;
   }
 
   setTimeout(timeout: number): this {
@@ -70,28 +71,33 @@ export class PagedEmbed {
     return this;
   }
 
-  setLeftEmoji(leftEmoji: EmojiResolvable): this {
+  setLeftEmoji(leftEmoji: ComponentEmojiResolvable): this {
     this.leftEmoji = leftEmoji;
     return this;
   }
 
-  setRightEmoji(rightEmoji: EmojiResolvable): this {
+  setRightEmoji(rightEmoji: ComponentEmojiResolvable): this {
     this.rightEmoji = rightEmoji;
     return this;
   }
 
-  setLeftStyle(leftStyle: ExcludeEnum<typeof MessageButtonStyles, "LINK">): this {
+  setLeftStyle(leftStyle: Exclude<ButtonStyle, ButtonStyle.Link>): this {
     this.leftStyle = leftStyle;
     return this;
   }
 
-  setRightStyle(rightStyle: ExcludeEnum<typeof MessageButtonStyles, "LINK">): this {
+  setRightStyle(rightStyle: Exclude<ButtonStyle, ButtonStyle.Link>): this {
     this.rightStyle = rightStyle;
     return this;
   }
 
   setShowPaging(showPaging: boolean): this {
     this.showPaging = showPaging;
+    return this;
+  }
+
+  setWrapAround(wrapAround: boolean): this {
+    this.wrapAround = wrapAround;
     return this;
   }
 
@@ -112,21 +118,22 @@ export class PagedEmbed {
   /*
   Sends a the paged embed with the given embed list and attachments.
   */
-  async send(interaction: CommandInteraction, embeds: MessageEmbed[], attachments: MessageAttachment[] | string[] = []) {
+  async send(interaction: CommandInteraction, embeds: EmbedBuilder[], attachments: Attachment[] | string[] = []) {
 
     // Hydrate embeds with page numbers if enabled
     if (this.showPaging) {
       for (let i = 0; i < embeds.length; i++) {
         let embed = embeds[i];
-        let newFooter: MessageEmbedFooter = {
-          text: "\u200b\nPage " + (i + 1) + " / " + embeds.length + (embed.footer ? embed.footer.text : ""),
-          iconURL: embed.footer?.iconURL,
-          proxyIconURL: embed.footer?.proxyIconURL
-        }
-        embed?.setFooter(newFooter);
+        let embedData = embed.data;
+
+        embed.setFooter({
+          text: "\u200b\nPage " + (i + 1) + " / " + embeds.length + (embedData.footer ? embedData.footer.text : ""),
+          iconURL: embedData.footer?.icon_url
+        })
       }
     }
 
+    // Don't set any buttons if there is only one embed
     if (embeds.length === 1) {
       await interaction.reply({
         embeds: [embeds[0]],
@@ -135,22 +142,35 @@ export class PagedEmbed {
       return;
     }
 
-    const backButton = new MessageButton({
-      style: this.leftStyle,
-      emoji: this.leftEmoji,
-      customId: backId
-    });
+    const backButton = new ButtonBuilder()
+        .setStyle(this.leftStyle)
+        .setEmoji(this.leftEmoji)
+        .setCustomId(backId)
 
-    const forwardButton = new MessageButton({
-      style: this.rightStyle,
-      emoji: this.rightEmoji,
-      customId: forwardId
-    });
+    const forwardButton = new ButtonBuilder()
+        .setStyle(this.rightStyle)
+        .setEmoji(this.rightEmoji)
+        .setCustomId(forwardId)
 
+    const getButtonRow = (currentIndex:  number, embedCount: number) => {
+      if (this.wrapAround) {
+        return new ActionRowBuilder<ButtonBuilder>().addComponents(
+          backButton,
+          forwardButton
+        )
+      } else {
+        return new ActionRowBuilder<ButtonBuilder>().addComponents(
+          ...(currentIndex ? [backButton] : []),
+          ...(currentIndex < embedCount - 1 ? [forwardButton] : [])
+        )
+      }
+    }
+
+    let currentIndex = 0;
     let embed = await interaction.reply({
-      embeds: [embeds[0]],
+      embeds: [embeds[currentIndex]],
       files: attachments,
-      components: embeds.length > 1 ? [new MessageActionRow({components: [forwardButton]})] : [],
+      components: [getButtonRow(currentIndex, embeds.length)],
       fetchReply: true
     });
 
@@ -159,7 +179,6 @@ export class PagedEmbed {
         time: this.timeout
       });
 
-      let currentIndex = 0;
       this.collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
         this.resetTimer();
 
@@ -169,33 +188,24 @@ export class PagedEmbed {
           currentIndex += 1;
         }
 
+        // Modulo current index to support wrap arounds
+        if (this.wrapAround) {
+          currentIndex = ((currentIndex % embeds.length) + embeds.length) % embeds.length;
+        }
+
         await buttonInteraction.update({
           embeds: [embeds[currentIndex]],
-          components: [
-            new MessageActionRow({
-              components: [
-                ...(currentIndex ? [backButton] : []),
-                ...(currentIndex < embeds.length - 1 ? [forwardButton] : [])
-              ]
-            })
-          ]
-        }).catch(ignore([Constants.APIErrors.UNKNOWN_INTERACTION]));
+          components: [getButtonRow(currentIndex, embeds.length)]
+        }).catch(ignore([RESTJSONErrorCodes.UnknownInteraction]));
       });
 
       this.collector.on("end", async () => {
-        backButton.disabled = true;
-        forwardButton.disabled = true;
+        backButton.setDisabled(true)
+        forwardButton.setDisabled(true)
 
         await interaction.editReply({
-          components: [
-            new MessageActionRow({
-              components: [
-                ...(currentIndex ? [backButton] : []),
-                ...(currentIndex < embeds.length - 1 ? [forwardButton] : [])
-              ]
-            })
-          ]
-        }).catch(ignore([Constants.APIErrors.UNKNOWN_MESSAGE]));
+          components: [getButtonRow(currentIndex, embeds.length)]
+        }).catch(ignore([RESTJSONErrorCodes.UnknownMessage]));
       });
     }
   }

@@ -1,14 +1,14 @@
 {
   "name": "@joshbrucker/discordjs-utils",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "A set of utility classes and functions to aid with discord.js bot development. Paged embeds, emoji utilities, and more!",
   "main": "lib/index.js",
   "scripts": {
     "build": "npx tsc -d"
   },
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/joshbrucker/discordjs-utils.git"
+    "type": "git",
+    "url": "https://github.com/joshbrucker/discordjs-utils.git"
   },
   "keywords": [
     "discordjs",
@@ -27,6 +27,7 @@
     "typescript": "^4.6.4"
   },
   "dependencies": {
-    "discord.js": "^13.7.0"
+    "discord-api-types": "^0.37.46",
+    "discord.js": "^14.11.0"
   }
 }
