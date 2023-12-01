@@ -99,6 +99,9 @@
     "skipLibCheck": true,                                 /* Skip type checking all .d.ts files. */
     "outDir": "lib"
   },
+  "exclude": [
+    "node_modules"
+  ],
   "include": [
     "src"
   ]
