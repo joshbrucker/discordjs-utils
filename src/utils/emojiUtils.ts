@@ -1,5 +1,11 @@
 import { Client, Emoji, EmojiResolvable, Message  } from "discord.js";
 
+/*
+Super rudimentary cache here to avoid making repetitive calls across shards
+TODO: Add some form of cache invalidation
+*/
+let emojiCache: Map<String, Emoji> = new Map();
+
 interface FetchEmojiOptions {
   identifier: string;
 }
@@ -8,20 +14,33 @@ interface FetchEmojiOptions {
 Retrieves a GuildEmoji based on the given identifier string (emoji ID or name).
 This function will work on sharded bots.
 */
-export async function fetch(client: Client, identifier: string): Promise<Emoji | null> {
+export async function fetch(client: Client, identifier: string): Promise<Emoji | null | undefined> {
+  // Check cache for emoji first
+  if (emojiCache.has(identifier)) {
+    return emojiCache.get(identifier);
+  }
+
   function findEmoji(target: Client, options: FetchEmojiOptions): Emoji | null {
     const emoji = target.emojis.cache.get(options.identifier) || target.emojis.cache.find(e => e.name?.toLowerCase() === options.identifier.toLowerCase());
     if (!emoji) return null;
     return emoji;
   }
   
+  let foundEmoji: Emoji | null;
   if (client.shard) {
     let emojiArray: any[] = await client.shard.broadcastEval(findEmoji, { context: { identifier: identifier }});
     emojiArray = emojiArray.filter(emoji => emoji != null);
-    return emojiArray.shift();
+    foundEmoji = emojiArray.shift();
   } else {
-    return findEmoji(client, { identifier: identifier });
+    foundEmoji = findEmoji(client, { identifier: identifier });
   }
+
+  // If found, add to the cache
+  if (foundEmoji) {
+    emojiCache.set(identifier, foundEmoji);
+  }
+
+  return foundEmoji;
 }
 
 /*
