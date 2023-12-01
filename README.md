@@ -78,7 +78,7 @@ embed.resetTimer();
 This set of utility functions has to do with managing emojis.
 
 ### fetch(String)
-Fetching an emoji is easy... Until you need to do it with a sharded bot. This function takes in an emoji ID and will fetch an emoji, even if that emoji exists in a guild on a different shard.
+Fetching an emoji is easy... Until you need to do it with a sharded bot. This function takes in an emoji ID and will fetch an emoji, even if that emoji exists in a guild on a different shard. Fetched mojis will be cached so that you don't need to constantly make expensive calls across shards for the same emoji.
 
 ```javascript
 const { emojiUtils } = require("@joshbrucker/discordjs-utils.js");
