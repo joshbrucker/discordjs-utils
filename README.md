@@ -1,12 +1,12 @@
 # Discord.js Utils
-This is a set of tools developed to help me create my Discord bots using discord.js.
+A set of tools developed to help me create my Discord bots using discord.js.
 
 ---
 
 ## Paged Embeds
-Paged Embeds are embeds with buttons at the bottom to go back and forth through a list of different embeds.
+Paged Embeds are embeds with buttons at the bottom to go back and forth through a list of provided embeds.
 
-Each Page Embed object is fully customizable. Below is the list of options you can set, along with their defaults. These can be passed as an options parameter in the PagedEmbed constructor, or they can be set through the setter functions for each variable.
+Each Paged Embed object is fully customizable. Below is the list of options you can set, along with their defaults. These can be passed as an options parameter in the PagedEmbed constructor, or they can be set through the setter functions for each variable.
 
 `timeout` (120000): An integer value that represents how long it will take, in milliseconds, until the buttons "time out" (i.e., become no longer pressable). The timer is reset on every button click of the embed.
 
@@ -18,14 +18,22 @@ Each Page Embed object is fully customizable. Below is the list of options you c
 
 `rightStyle` ("SECONDARY"): The button style to use for the right button.
 
-`showPaging` (true): Whether to display page numbers in the footer of the embeds (will overwrite any footers you pass it).
+`showPageNumbers` (true): Whether to display page numbers in the footer of the embeds.
+
+`wrapAround` (false): Whether to allow paging past ends of the embed list, which just loops back to the start or end.
+
+`resetTimerOnClick` (true): Whether a button click will reset the timer for deactivating buttons.
 
 
 ```javascript
 const { PagedEmbed } = require("@joshbrucker/discordjs-utils.js");
 
 // Using options parameter
-new PagedEmbed({ timeout: 30000, leftEmoji: "👈", rightEmoji: "👉" });
+new PagedEmbed({
+    timeout: 30000,
+    leftEmoji: "👈",
+    rightEmoji: "👉"
+});
 
 // Using setters
 new PagedEmbed()
@@ -44,7 +52,11 @@ const { PagedEmbed } = require("@joshbrucker/discordjs-utils.js");
 // ...
 
 let embedList = [new MessageEmbed(), new MessageEmbed()];
-let pagedEmbed = new PagedEmbed({ timeout: 30000, leftEmoji: "👈", rightEmoji: "👉" });
+let pagedEmbed = new PagedEmbed({
+    timeout: 30000, 
+    leftEmoji: "👈",
+    rightEmoji: "👉"
+});
 
 await pagedEmbed.send(commandInteraction, embedList);
 await pagedEmbed.send(commandInteraction, embedList, attachments=["path/to/png"]);
@@ -56,7 +68,11 @@ Forcefully expire the buttons.
 ```javascript
 const { PagedEmbed } = require("@joshbrucker/discordjs-utils.js");
 
-let embed = new PagedEmbed({ timeout: 30000, leftEmoji: "👈", rightEmoji: "👉" });
+let embed = new PagedEmbed({
+    timeout: 30000,
+    leftEmoji: "👈",
+    rightEmoji: "👉"
+});
 
 embed.expire();
 ```
@@ -67,7 +83,11 @@ Forcefully reset the timer.
 ```javascript
 const { PagedEmbed } = require("@joshbrucker/discordjs-utils.js");
 
-let embed = new PagedEmbed({ timeout: 30000, leftEmoji: "👈", rightEmoji: "👉" });
+let embed = new PagedEmbed({
+    timeout: 30000,
+    leftEmoji: "👈",
+    rightEmoji: "👉"
+});
 
 embed.resetTimer();
 ```
