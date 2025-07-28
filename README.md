@@ -6,9 +6,9 @@ A set of tools developed to help me create my Discord bots using discord.js.
 ## Paged Embeds
 Paged Embeds are embeds with buttons at the bottom to go back and forth through a list of provided embeds.
 
-Each Paged Embed object is fully customizable. Below is the list of options you can set, along with their defaults. These can be passed as an options parameter in the PagedEmbed constructor, or they can be set through the setter functions for each variable.
+Each PagedEmbed object is fully customizable. Below is the list of options you can set, along with their defaults. These can be passed as an options parameter in the PagedEmbed constructor, or they can be set through the setter functions for each variable.
 
-`timeout` (120000): An integer value that represents how long it will take, in milliseconds, until the buttons "time out" (i.e., become no longer pressable). The timer is reset on every button click of the embed.
+`timeout` (120000): An integer value that represents how long it will take, in milliseconds, until the buttons "time out" (i.e., become no longer pressable).
 
 `leftEmoji`  ("⬅️"): The emoji to use for the left button.
 
@@ -22,7 +22,7 @@ Each Paged Embed object is fully customizable. Below is the list of options you 
 
 `wrapAround` (false): Whether to allow paging past ends of the embed list, which just loops back to the start or end.
 
-`resetTimerOnClick` (true): Whether a button click will reset the timer for deactivating buttons.
+`resetTimerOnPress` (true): Whether a button press will reset the timer for deactivating buttons.
 
 
 ```javascript
