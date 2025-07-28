@@ -14,14 +14,21 @@ import { ButtonStyle, RESTJSONErrorCodes } from "discord-api-types/v10";
 import { DEFAULT_OPTIONS, PagedEmbedOptions } from "./PagedEmbedOptions";
 import { ignore } from "../utils/errorHandlers.js";
 
-const BACK_ID = "back";
-const FORWARD_ID = "forward";
+export class PagedEmbedSendError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PagedEmbedSendError";
+  }
+}
 
 /*
 Allows for creation and customization of "paged" embeds,
 where Discord users can click buttons to page through a list of embeds.
 */
 export class PagedEmbed {
+  public static readonly BACK_ID = "back";
+  public static readonly FORWARD_ID = "forward";
+
   timeout: number;
   leftEmoji: ComponentEmojiResolvable;
   rightEmoji: ComponentEmojiResolvable;
@@ -29,12 +36,14 @@ export class PagedEmbed {
   rightStyle: Exclude<ButtonStyle, ButtonStyle.Link>;
   showPageNumbers: boolean;
   wrapAround: boolean;
-  resetTimerOnClick: boolean;
+  resetTimerOnPress: boolean;
 
   collector: InteractionCollector<any> | undefined;
+  backButton: ButtonBuilder;
+  forwardButton: ButtonBuilder;
 
   constructor(options: PagedEmbedOptions) {
-    options = { ...options, ...DEFAULT_OPTIONS };
+    options = { ...DEFAULT_OPTIONS, ...options };
 
     this.timeout = options.timeout;
     this.leftEmoji = options.leftEmoji;
@@ -43,7 +52,10 @@ export class PagedEmbed {
     this.rightStyle = options.rightStyle;
     this.showPageNumbers = options.showPageNumbers;
     this.wrapAround = options.wrapAround;
-    this.resetTimerOnClick = options.resetTimerOnClick;
+    this.resetTimerOnPress = options.resetTimerOnPress;
+
+    this.backButton = new ButtonBuilder();
+    this.forwardButton = new ButtonBuilder();
   }
 
   setTimeout(timeout: number): this {
@@ -81,8 +93,8 @@ export class PagedEmbed {
     return this;
   }
 
-  withResetTimerOnClick(resetTimerOnClick: boolean): this {
-    this.resetTimerOnClick = resetTimerOnClick;
+  withResetTimerOnPress(resetTimerOnPress: boolean): this {
+    this.resetTimerOnPress = resetTimerOnPress;
     return this;
   }
 
@@ -106,8 +118,19 @@ export class PagedEmbed {
   async send(
     interaction: CommandInteraction,
     embeds: EmbedBuilder[],
-    attachments: Attachment[] | string[] = []
+    attachments: Attachment[] | string[] = [],
+    startIndex = 0
   ) {
+    if (embeds.length === 0) {
+      throw new PagedEmbedSendError("Embed list size must be at least 1.");
+    }
+
+    if (startIndex < 0 || startIndex >= embeds.length) {
+      throw new PagedEmbedSendError(
+        "startIndex must be within bounds of embed list size."
+      );
+    }
+
     // Hydrate embeds with current page number over total page numbers, if requested
     if (this.showPageNumbers) {
       for (let i = 0; i < embeds.length; i++) {
@@ -132,15 +155,15 @@ export class PagedEmbed {
       return;
     }
 
-    const backButton = new ButtonBuilder()
+    this.backButton
       .setStyle(this.leftStyle)
       .setEmoji(this.leftEmoji)
-      .setCustomId(BACK_ID);
+      .setCustomId(PagedEmbed.BACK_ID);
 
-    const forwardButton = new ButtonBuilder()
+    this.forwardButton
       .setStyle(this.rightStyle)
       .setEmoji(this.rightEmoji)
-      .setCustomId(FORWARD_ID);
+      .setCustomId(PagedEmbed.FORWARD_ID);
 
     const getButtonRow = (currentIndex: number, embedCount: number) => {
       const showBackButton = currentIndex > 0 || this.wrapAround;
@@ -148,12 +171,12 @@ export class PagedEmbed {
         currentIndex < embedCount - 1 || this.wrapAround;
 
       return new ActionRowBuilder<ButtonBuilder>().addComponents(
-        ...(showBackButton ? [backButton] : []),
-        ...(showForwardButton ? [forwardButton] : [])
+        ...(showBackButton ? [this.backButton] : []),
+        ...(showForwardButton ? [this.forwardButton] : [])
       );
     };
 
-    let currentIndex = 0;
+    let currentIndex = startIndex;
     const interactionResponse: InteractionCallbackResponse =
       await interaction.reply({
         embeds: [embeds[currentIndex]],
@@ -172,13 +195,13 @@ export class PagedEmbed {
       this.collector.on(
         "collect",
         async (buttonInteraction: ButtonInteraction) => {
-          if (this.resetTimerOnClick) {
+          if (this.resetTimerOnPress) {
             this.resetTimer();
           }
 
-          if (buttonInteraction.customId === BACK_ID) {
+          if (buttonInteraction.customId === PagedEmbed.BACK_ID) {
             currentIndex -= 1;
-          } else if (buttonInteraction.customId === FORWARD_ID) {
+          } else if (buttonInteraction.customId === PagedEmbed.FORWARD_ID) {
             currentIndex += 1;
           }
 
@@ -196,8 +219,8 @@ export class PagedEmbed {
       );
 
       this.collector.on("end", async () => {
-        backButton.setDisabled(true);
-        forwardButton.setDisabled(true);
+        this.backButton.setDisabled(true);
+        this.forwardButton.setDisabled(true);
 
         await interaction
           .editReply({
