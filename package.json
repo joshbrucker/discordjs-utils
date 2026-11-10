@@ -1,6 +1,6 @@
 {
   "name": "@joshbrucker/discordjs-utils",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "A set of utility classes and functions to aid with discord.js bot development. Paged embeds, emoji utilities, and more!",
   "main": "lib/index.js",
   "scripts": {
@@ -23,6 +23,9 @@
   ],
   "author": "Joshua Brucker",
   "license": "ISC",
+  "files": [
+    "lib"
+  ],
   "dependencies": {
     "discord-api-types": "^0.38.17",
     "discord.js": "^14.14.1"
